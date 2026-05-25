@@ -8,3 +8,4 @@ gTTS                     # Google Text-to-Speech
 pydub                    # Manipulasi audio
 python-dotenv            # Manajemen API key
 aiofiles                 # Async file I/O
+gunicorn
