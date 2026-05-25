@@ -1,0 +1,540 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI Mock Interviewer</title>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #0a0a0f;
+      --surface: #111118;
+      --border: #1e1e2e;
+      --accent: #6ee7b7;
+      --accent2: #818cf8;
+      --danger: #f87171;
+      --text: #e2e8f0;
+      --muted: #64748b;
+      --glow: 0 0 30px rgba(110,231,183,0.15);
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Syne', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      overflow-x: hidden;
+    }
+
+    /* Background grid */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(110,231,183,0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(110,231,183,0.03) 1px, transparent 1px);
+      background-size: 40px 40px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    header {
+      width: 100%;
+      max-width: 800px;
+      padding: 2.5rem 2rem 1rem;
+      position: relative;
+      z-index: 1;
+    }
+
+    .tag {
+      display: inline-block;
+      font-family: 'DM Mono', monospace;
+      font-size: 0.7rem;
+      color: var(--accent);
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      border: 1px solid rgba(110,231,183,0.3);
+      padding: 0.25rem 0.75rem;
+      border-radius: 999px;
+      margin-bottom: 1rem;
+    }
+
+    h1 {
+      font-size: clamp(1.8rem, 5vw, 2.8rem);
+      font-weight: 800;
+      line-height: 1.1;
+      letter-spacing: -0.02em;
+    }
+
+    h1 span {
+      color: var(--accent);
+    }
+
+    .subtitle {
+      margin-top: 0.5rem;
+      color: var(--muted);
+      font-size: 0.95rem;
+      font-weight: 400;
+    }
+
+    main {
+      width: 100%;
+      max-width: 800px;
+      padding: 1.5rem 2rem 3rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+      position: relative;
+      z-index: 1;
+    }
+
+    /* Status bar */
+    .status-bar {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.75rem 1.25rem;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      font-family: 'DM Mono', monospace;
+      font-size: 0.8rem;
+      color: var(--muted);
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--muted);
+      flex-shrink: 0;
+      transition: background 0.3s, box-shadow 0.3s;
+    }
+
+    .status-dot.connected { background: var(--accent); box-shadow: 0 0 8px var(--accent); }
+    .status-dot.recording { background: var(--danger); box-shadow: 0 0 8px var(--danger); animation: pulse 1s infinite; }
+    .status-dot.processing { background: var(--accent2); box-shadow: 0 0 8px var(--accent2); animation: pulse 0.7s infinite; }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
+
+    /* Chat area */
+    .chat-box {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 1.5rem;
+      min-height: 320px;
+      max-height: 420px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      scrollbar-width: thin;
+      scrollbar-color: var(--border) transparent;
+    }
+
+    .chat-box:empty::after {
+      content: 'Sesi wawancara akan dimulai setelah terhubung...';
+      color: var(--muted);
+      font-size: 0.85rem;
+      font-family: 'DM Mono', monospace;
+      text-align: center;
+      margin: auto;
+    }
+
+    .bubble {
+      max-width: 85%;
+      padding: 0.85rem 1.1rem;
+      border-radius: 14px;
+      font-size: 0.92rem;
+      line-height: 1.55;
+      animation: fadeUp 0.3s ease;
+    }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .bubble.hrd {
+      background: linear-gradient(135deg, rgba(110,231,183,0.1), rgba(110,231,183,0.05));
+      border: 1px solid rgba(110,231,183,0.2);
+      align-self: flex-start;
+    }
+
+    .bubble.hrd::before {
+      content: '🤵 HRD';
+      display: block;
+      font-family: 'DM Mono', monospace;
+      font-size: 0.65rem;
+      color: var(--accent);
+      letter-spacing: 0.1em;
+      margin-bottom: 0.4rem;
+      text-transform: uppercase;
+    }
+
+    .bubble.user {
+      background: rgba(129,140,248,0.08);
+      border: 1px solid rgba(129,140,248,0.2);
+      align-self: flex-end;
+    }
+
+    .bubble.user::before {
+      content: '🧑‍💼 Kamu';
+      display: block;
+      font-family: 'DM Mono', monospace;
+      font-size: 0.65rem;
+      color: var(--accent2);
+      letter-spacing: 0.1em;
+      margin-bottom: 0.4rem;
+      text-transform: uppercase;
+    }
+
+    .bubble.system {
+      align-self: center;
+      background: transparent;
+      border: none;
+      color: var(--muted);
+      font-family: 'DM Mono', monospace;
+      font-size: 0.75rem;
+      text-align: center;
+    }
+
+    /* Visualizer */
+    .visualizer-wrap {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1.25rem;
+    }
+
+    #visualizer {
+      width: 100%;
+      height: 72px;
+      border-radius: 12px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      display: block;
+    }
+
+    /* Controls */
+    .controls {
+      display: flex;
+      gap: 1rem;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      padding: 0.85rem 2rem;
+      border-radius: 999px;
+      border: none;
+      font-family: 'Syne', sans-serif;
+      font-size: 0.9rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      letter-spacing: 0.02em;
+    }
+
+    .btn:disabled {
+      opacity: 0.35;
+      cursor: not-allowed;
+    }
+
+    .btn-record {
+      background: var(--accent);
+      color: #0a0f0e;
+      box-shadow: 0 0 0 0 rgba(110,231,183,0.4);
+    }
+
+    .btn-record:hover:not(:disabled) {
+      background: #a7f3d0;
+      box-shadow: 0 0 20px rgba(110,231,183,0.3);
+      transform: translateY(-1px);
+    }
+
+    .btn-record.recording {
+      background: var(--danger);
+      color: white;
+      box-shadow: 0 0 20px rgba(248,113,113,0.4);
+      animation: recordPulse 1.5s infinite;
+    }
+
+    @keyframes recordPulse {
+      0%, 100% { box-shadow: 0 0 20px rgba(248,113,113,0.4); }
+      50% { box-shadow: 0 0 35px rgba(248,113,113,0.7); }
+    }
+
+    .btn-reset {
+      background: transparent;
+      color: var(--muted);
+      border: 1px solid var(--border);
+    }
+
+    .btn-reset:hover:not(:disabled) {
+      border-color: var(--accent2);
+      color: var(--accent2);
+    }
+
+    /* Audio player */
+    #audio-player { display: none; }
+
+    /* Transcript live */
+    .transcript-live {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.78rem;
+      color: var(--muted);
+      text-align: center;
+      min-height: 1.2em;
+      transition: color 0.3s;
+    }
+
+    .transcript-live.active { color: var(--accent2); }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="tag">⚡ AI Mock Interviewer</div>
+  <h1>Latihan Wawancara<br /><span>bersama HRD Virtual</span></h1>
+  <p class="subtitle">Bicara natural — AI akan merespons seperti HRD sungguhan.</p>
+</header>
+
+<main>
+  <!-- Status -->
+  <div class="status-bar">
+    <div class="status-dot" id="status-dot"></div>
+    <span id="status-text">Menghubungkan ke server...</span>
+  </div>
+
+  <!-- Chat -->
+  <div class="chat-box" id="chat-box"></div>
+
+  <!-- Visualizer + Controls -->
+  <div class="visualizer-wrap">
+    <canvas id="visualizer"></canvas>
+    <p class="transcript-live" id="transcript-live">—</p>
+    <div class="controls">
+      <button class="btn btn-record" id="btn-record" disabled onclick="toggleRecording()">
+        🎙️ Mulai Berbicara
+      </button>
+      <button class="btn btn-reset" id="btn-reset" onclick="resetSesi()">
+        ↺ Reset Sesi
+      </button>
+    </div>
+  </div>
+</main>
+
+<audio id="audio-player" autoplay></audio>
+
+<script>
+  // ─── CONFIG ───────────────────────────────────────────────
+  const WS_URL = `${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}/ws`;
+
+  // ─── STATE ────────────────────────────────────────────────
+  let ws = null;
+  let mediaRecorder = null;
+  let audioChunks = [];
+  let isRecording = false;
+  let audioCtx = null;
+  let analyser = null;
+  let animFrame = null;
+  let stream = null;
+
+  // ─── ELEMENTS ─────────────────────────────────────────────
+  const btnRecord  = document.getElementById('btn-record');
+  const statusDot  = document.getElementById('status-dot');
+  const statusText = document.getElementById('status-text');
+  const chatBox    = document.getElementById('chat-box');
+  const canvas     = document.getElementById('visualizer');
+  const ctx        = canvas.getContext('2d');
+  const transcriptLive = document.getElementById('transcript-live');
+  const audioPlayer = document.getElementById('audio-player');
+
+  // ─── WEBSOCKET ────────────────────────────────────────────
+  function connect() {
+    setStatus('connecting', 'Menghubungkan ke server...');
+    ws = new WebSocket(WS_URL);
+    ws.binaryType = 'arraybuffer';
+
+    ws.onopen = () => {
+      setStatus('connected', 'Terhubung — siap wawancara');
+      btnRecord.disabled = false;
+    };
+
+    ws.onmessage = (e) => {
+      if (e.data instanceof ArrayBuffer) {
+        // Audio bytes dari server → putar
+        playAudio(e.data);
+      } else {
+        const msg = e.data;
+        if (msg === 'processing') {
+          setStatus('processing', 'AI sedang berpikir...');
+          transcriptLive.textContent = '⏳ Memproses jawaban...';
+          transcriptLive.classList.add('active');
+        } else if (msg.startsWith('transcript:')) {
+          const teks = msg.replace('transcript:', '');
+          addBubble('user', teks);
+          transcriptLive.textContent = `"${teks}"`;
+        } else if (msg.startsWith('response:')) {
+          const teks = msg.replace('response:', '');
+          addBubble('hrd', teks);
+          setStatus('connected', 'Terhubung — siap wawancara');
+          transcriptLive.textContent = '—';
+          transcriptLive.classList.remove('active');
+        } else if (msg.startsWith('error:')) {
+          const err = msg.replace('error:', '');
+          addBubble('system', `⚠️ ${err}`);
+          setStatus('connected', 'Terhubung — siap wawancara');
+          transcriptLive.textContent = '—';
+          transcriptLive.classList.remove('active');
+        }
+      }
+    };
+
+    ws.onclose = () => {
+      setStatus('disconnected', 'Koneksi terputus — mencoba ulang...');
+      btnRecord.disabled = true;
+      setTimeout(connect, 3000);
+    };
+
+    ws.onerror = () => {
+      setStatus('disconnected', 'Gagal terhubung ke server');
+    };
+  }
+
+  // ─── RECORDING ────────────────────────────────────────────
+  async function toggleRecording() {
+    if (!isRecording) await startRecording();
+    else stopRecording();
+  }
+
+  async function startRecording() {
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      setupVisualizer(stream);
+
+      mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
+      audioChunks = [];
+
+      mediaRecorder.ondataavailable = (e) => {
+        if (e.data.size > 0) audioChunks.push(e.data);
+      };
+
+      mediaRecorder.onstop = async () => {
+        const blob = new Blob(audioChunks, { type: 'audio/webm' });
+        const buffer = await blob.arrayBuffer();
+        if (ws && ws.readyState === WebSocket.OPEN) {
+          ws.send(buffer);
+        }
+        stopVisualizer();
+      };
+
+      mediaRecorder.start();
+      isRecording = true;
+      btnRecord.textContent = '⏹ Selesai Berbicara';
+      btnRecord.classList.add('recording');
+      setStatus('recording', 'Merekam suara...');
+
+    } catch (err) {
+      alert('Gagal akses mikrofon: ' + err.message);
+    }
+  }
+
+  function stopRecording() {
+    if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+      mediaRecorder.stop();
+    }
+    if (stream) stream.getTracks().forEach(t => t.stop());
+    isRecording = false;
+    btnRecord.textContent = '🎙️ Mulai Berbicara';
+    btnRecord.classList.remove('recording');
+  }
+
+  // ─── AUDIO PLAYBACK ───────────────────────────────────────
+  function playAudio(buffer) {
+    const blob = new Blob([buffer], { type: 'audio/mpeg' });
+    const url  = URL.createObjectURL(blob);
+    audioPlayer.src = url;
+    audioPlayer.play().catch(console.error);
+    audioPlayer.onended = () => URL.revokeObjectURL(url);
+  }
+
+  // ─── VISUALIZER ───────────────────────────────────────────
+  function setupVisualizer(stream) {
+    audioCtx  = new AudioContext();
+    analyser  = audioCtx.createAnalyser();
+    analyser.fftSize = 256;
+    const source = audioCtx.createMediaStreamSource(stream);
+    source.connect(analyser);
+    drawVisualizer();
+  }
+
+  function drawVisualizer() {
+    const W = canvas.width  = canvas.offsetWidth;
+    const H = canvas.height = canvas.offsetHeight;
+    const data = new Uint8Array(analyser.frequencyBinCount);
+
+    function draw() {
+      animFrame = requestAnimationFrame(draw);
+      analyser.getByteFrequencyData(data);
+      ctx.clearRect(0, 0, W, H);
+
+      const barW = (W / data.length) * 2.2;
+      let x = 0;
+      for (let i = 0; i < data.length; i++) {
+        const barH = (data[i] / 255) * H * 0.85;
+        const alpha = 0.4 + (data[i] / 255) * 0.6;
+        ctx.fillStyle = `rgba(110, 231, 183, ${alpha})`;
+        ctx.fillRect(x, H - barH, barW - 1, barH);
+        x += barW;
+      }
+    }
+    draw();
+  }
+
+  function stopVisualizer() {
+    if (animFrame) cancelAnimationFrame(animFrame);
+    if (audioCtx) audioCtx.close();
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+  }
+
+  // ─── UI HELPERS ───────────────────────────────────────────
+  function setStatus(state, text) {
+    statusDot.className = 'status-dot ' + state;
+    statusText.textContent = text;
+  }
+
+  function addBubble(type, text) {
+    const div = document.createElement('div');
+    div.className = `bubble ${type}`;
+    div.textContent = text;
+    chatBox.appendChild(div);
+    chatBox.scrollTop = chatBox.scrollHeight;
+  }
+
+  function resetSesi() {
+    if (isRecording) stopRecording();
+    chatBox.innerHTML = '';
+    addBubble('system', '🔄 Sesi direset — sambungkan ulang untuk mulai lagi');
+    if (ws) ws.close();
+  }
+
+  // ─── INIT ─────────────────────────────────────────────────
+  connect();
+</script>
+</body>
+</html>

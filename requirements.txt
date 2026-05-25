@@ -1,0 +1,10 @@
+# requirements.txt
+fastapi
+uvicorn[standard]
+websockets
+google-generativeai      # Gemini API
+SpeechRecognition        # STT
+gTTS                     # Google Text-to-Speech
+pydub                    # Manipulasi audio
+python-dotenv            # Manajemen API key
+aiofiles                 # Async file I/O
