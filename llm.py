@@ -24,12 +24,12 @@ ATURAN PENTING:
 5. Fokus pada bidang IT: programming, sistem, manajemen proyek, soft skills
 6. Bersikap profesional seperti wawancara sungguhan"""
 
-riwayat_chat = []
+from database import get_history, save_history, clear_history
 
-async def tanya_gemini(teks_user: str) -> str:
-    global riwayat_chat
-
+async def tanya_gemini(session_id: str, teks_user: str) -> str:
     try:
+        riwayat_chat = get_history(session_id)
+
         riwayat_chat.append({"role": "user", "parts": [{"text": teks_user}]})
 
         if len(riwayat_chat) > 10:
@@ -48,14 +48,14 @@ async def tanya_gemini(teks_user: str) -> str:
 
         riwayat_chat.append({"role": "model", "parts": [{"text": respons_hrd}]})
 
-        logger.info(f"Gemini respons: '{respons_hrd}'")
+        save_history(session_id, riwayat_chat)
+
+        logger.info(f"Gemini respons untuk sesi {session_id}: '{respons_hrd}'")
         return respons_hrd
 
     except Exception as e:
         logger.error(f"Error Gemini API: {e}")
         raise Exception(f"Gemini API error: {e}")
 
-def reset_sesi():
-    global riwayat_chat
-    riwayat_chat = []
-    logger.info("Sesi wawancara direset")
+def reset_sesi(session_id: str):
+    clear_history(session_id)

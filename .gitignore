@@ -25,3 +25,4 @@ cloudflared*.deb
 # OS files
 .DS_Store
 Thumbs.db
+interviews.db
