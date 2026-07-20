@@ -5,9 +5,9 @@ Aplikasi berbasis FastAPI, WebSockets, STT, Gemini (LLM), dan gTTS yang berjalan
 ---
 
 # Kelompok 1
--Wahid Sandy Pujo Dzulhijayanto (32602300015)
--Novi Mutiara Sari (32602300036)
--Aisyha Nurrahmah Ar-rabbani (32602300078)
+- Wahid Sandy Pujo Dzulhijayanto (32602300015)
+- Novi Mutiara Sari (32602300036)
+- Aisyha Nurrahmah Ar-rabbani (32602300078)
 
 ---
 
